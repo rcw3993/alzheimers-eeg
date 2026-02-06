@@ -1,0 +1,10 @@
+name: connectivity
+timestamp: 20260127
+representation: connectivity
+filters: [1, 40]
+window_size: 2
+step_size: 0.5
+artifact_rejection: true
+ptp_threshold: 100e-6
+subject_ids: [11, 49, 79]
+save_plots: true
