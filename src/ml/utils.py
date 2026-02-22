@@ -14,7 +14,7 @@ def set_seed(seed=42):
     torch.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-    print(f"✅ Seed set: {seed}")
+    print(f"Seed set: {seed}")
 
 def diagnosis_to_label(diagnosis: str) -> int:
     """AD=0, HC=1, FTD=2 (binary: AD vs non-AD possible too)"""
@@ -62,5 +62,5 @@ def log_experiment(config: dict, metrics: dict, output_dir: str):
         summary_df = log_df.groupby('representation')[available_cols].agg(['mean', 'std']).round(3)
         summary_df.to_csv(Path(output_dir) / 'summary_table.csv')
     
-    print(f"📊 Logged: {log_path}")
+    print(f"Logged: {log_path}")
     return log_path

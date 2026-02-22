@@ -85,7 +85,7 @@ class RawDataset(Dataset):
                 'n_windows': n_windows
             })
         
-        print(f"✅ Loaded {len(self.samples)} subjects ({sum(s['n_windows'] for s in self.samples)} total windows)")
+        print(f"Loaded {len(self.samples)} subjects ({sum(s['n_windows'] for s in self.samples)} total windows)")
     
     def _parse_channels(self, channels):
         """Normalize 'channels' input into a list of valid integer indices."""
@@ -224,7 +224,7 @@ class BandpowerDataset(Dataset):
                 'n_windows': n_windows
             })
         
-        print(f"✅ Loaded {len(self.samples)} subjects ({sum(s['n_windows'] for s in self.samples)} total windows)")
+        print(f"Loaded {len(self.samples)} subjects ({sum(s['n_windows'] for s in self.samples)} total windows)")
     
     def _parse_channels(self, channels):
         """Normalize 'channels' input into a list of valid integer indices."""
@@ -351,7 +351,7 @@ class STFTDataset(Dataset):
                 'n_windows': n_windows
             })
         
-        print(f"✅ Loaded {len(self.samples)} subjects ({sum(s['n_windows'] for s in self.samples)} total windows)")
+        print(f"Loaded {len(self.samples)} subjects ({sum(s['n_windows'] for s in self.samples)} total windows)")
     
     def _parse_channels(self, channels):
         """Identical to other datasets"""
@@ -461,7 +461,7 @@ class ConnectivityDataset(Dataset):
                 'n_windows': n_windows
             })
         
-        print(f"✅ Loaded {len(self.samples)} subjects ({sum(s['n_windows'] for s in self.samples)} total windows)")
+        print(f" Loaded {len(self.samples)} subjects ({sum(s['n_windows'] for s in self.samples)} total windows)")
     
     def __len__(self):
         total = 0
@@ -520,7 +520,7 @@ def raw_to_numpy(
     
     X = np.stack(X_list)
     y = np.array(y_list)
-    print(f"✅ Raw NumPy: X.shape={X.shape}, y.shape={y.shape}")
+    print(f"Raw NumPy: X.shape={X.shape}, y.shape={y.shape}")
     return X, y
 
 def bandpower_to_numpy(
@@ -565,7 +565,7 @@ def connectivity_to_numpy(
     
     X = np.stack(X_list)
     y = np.array(y_list)
-    print(f"✅ Connectivity NumPy: X.shape={X.shape}, y.shape={y.shape}")
+    print(f"Connectivity NumPy: X.shape={X.shape}, y.shape={y.shape}")
     return X, y
 
 if __name__ == "__main__":

@@ -27,6 +27,14 @@ from sklearn.metrics import roc_auc_score
 from src.ml.utils import set_seed, compute_metrics, log_experiment
 from src.ml.datasets import BandpowerDataset, bandpower_to_numpy
 
+from sklearn.metrics import (
+    roc_auc_score,
+    f1_score,
+    accuracy_score,
+    precision_score,
+    confusion_matrix,
+    roc_curve
+)
 
 def build_bandpower_arrays(results_root: str, subjects: List[int], channels=None):
     """Load X, y and subject_ids aligned per-window."""
@@ -83,7 +91,7 @@ def cross_val_raw_1dcnn(
     y_all = torch.tensor(all_y)
     subject_ids = np.array(all_subject_ids)
     
-    print(f"✅ Smart sampling: {X_all.shape[0]} windows (32/subject)")
+    print(f" Smart sampling: {X_all.shape[0]} windows (32/subject)")
     
     # Now GroupKFold + train FAST
     gkf = GroupKFold(n_splits=5)
@@ -119,7 +127,7 @@ def cross_val_raw_1dcnn(
             auc = roc_auc_score(y_test.cpu(), probs.cpu())
             auc_scores.append(auc)
     
-    print(f"🏆 Raw + 1D CNN: {np.mean(auc_scores):.3f} ± {np.std(auc_scores):.3f}")
+    print(f" Raw + 1D CNN: {np.mean(auc_scores):.3f} ± {np.std(auc_scores):.3f}")
     return np.mean(auc_scores)
 
 def cross_val_bandpower_rf(
@@ -144,7 +152,7 @@ def cross_val_bandpower_rf(
     fold_results = []
 
     for fold, (train_idx, test_idx) in enumerate(gkf.split(X, y, subject_ids)):
-        print(f"\n📂 Fold {fold+1}/{n_splits}: {len(train_idx)} train, {len(test_idx)} test windows")
+        print(f"\nFold {fold+1}/{n_splits}: {len(train_idx)} train, {len(test_idx)} test windows")
 
         rf = RandomForestClassifier(
             n_estimators=rf_params.get("n_estimators", 200),
@@ -170,7 +178,7 @@ def cross_val_bandpower_rf(
     auc_mean, auc_std = np.mean(auc_scores), np.std(auc_scores)
     f1_mean, f1_std = np.mean(f1_scores), np.std(f1_scores)
 
-    print("\n📊 FINAL CV RESULTS (Bandpower + RF):")
+    print("\nFINAL CV RESULTS (Bandpower + RF):")
     print(f"AUC: {auc_mean:.3f} ± {auc_std:.3f}")
     print(f"F1:  {f1_mean:.3f} ± {f1_std:.3f}")
 
@@ -201,7 +209,7 @@ def train_final_model_bandpower_rf(results_root, subjects, rf_params, output_dir
     """Retrain on FULL dataset after CV hyperparam selection"""
     set_seed(42)
     
-    print("🎯 Training FINAL model on full dataset...")
+    print("training FINAL model on full dataset...")
     X, y, _ = build_bandpower_arrays(results_root, subjects)
     
     rf = RandomForestClassifier(**rf_params, random_state=42, n_jobs=-1)
@@ -228,10 +236,162 @@ def train_final_model_bandpower_rf(results_root, subjects, rf_params, output_dir
     }
     pd.DataFrame([metadata]).to_csv(model_dir / "metadata.csv", index=False)
     
-    print(f"💾 FINAL MODEL SAVED: {model_dir / 'model.joblib'}")
-    print(f"🏆 Top 5 channels: {np.argsort(channel_importances)[-5:][::-1]}")
+    print(f"FINAL MODEL SAVED: {model_dir / 'model.joblib'}")
+    print(f" Top 5 channels: {np.argsort(channel_importances)[-5:][::-1]}")
     
     return rf, model_dir
+
+def cross_val_bandpower_rf_thresh_opt(
+    results_root: str,
+    subjects: List[int],
+    rf_params: Dict[str, Any],
+    channels: List[int] = None,
+    n_splits: int = 5,
+    target_sensitivity: float = 0.85,
+    save_logs: bool = True,
+    output_dir: str = "results/ml_bandpower_rf_5ch_thresh_opt"
+):
+    """
+    5-fold GroupKFold CV on bandpower features with fixed channels.
+    For each fold, chooses a probability threshold that:
+      1) Achieves sensitivity >= target_sensitivity (if possible)
+      2) Among those thresholds, maximizes Youden's J (sens + spec - 1).
+    Returns cross-validated AUC plus threshold-optimized sensitivity, specificity, etc.
+    """
+
+    set_seed(42)
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    # Default: your fixed 5 channels
+    if channels is None:
+        # T4 (12), Pz (14), Cz (9), T6 (16), C3 (10)
+        channels = [12, 14, 9, 16, 10]
+
+    print("Loading bandpower arrays (5 fixed channels)...")
+    X, y, subject_ids = build_bandpower_arrays(results_root, subjects, channels=channels)
+    print(f"X shape: {X.shape}, y distribution: {np.bincount(y)}")
+
+    gkf = GroupKFold(n_splits=n_splits)
+    fold_metrics = []
+
+    for fold, (train_idx, test_idx) in enumerate(gkf.split(X, y, subject_ids)):
+        print(f"\nFold {fold+1}/{n_splits}: {len(train_idx)} train, {len(test_idx)} test windows")
+
+        rf = RandomForestClassifier(
+            n_estimators=rf_params.get("n_estimators", 200),
+            max_depth=rf_params.get("max_depth", None),
+            min_samples_split=rf_params.get("min_samples_split", 2),
+            random_state=42 + fold,
+            n_jobs=-1
+        )
+
+        rf.fit(X[train_idx], y[train_idx])
+
+        # Probabilities on the test fold
+        y_prob = rf.predict_proba(X[test_idx])[:, 1]
+
+        # --- Find threshold with sens >= target_sensitivity and max Youden's J ---
+        fpr, tpr, thresholds = roc_curve(y[test_idx], y_prob)  # tpr = sensitivity, fpr = 1 - specificity
+        specificity = 1.0 - fpr
+
+        # Mask thresholds with tpr >= target_sensitivity
+        valid_mask = tpr >= target_sensitivity
+
+        if np.any(valid_mask):
+            # Compute Youden's J only on valid thresholds
+            J = tpr + specificity - 1.0
+            J_valid = J[valid_mask]
+            thr_valid = thresholds[valid_mask]
+
+            best_idx = np.argmax(J_valid)
+            best_threshold = thr_valid[best_idx]
+        else:
+            # If no threshold reaches target sensitivity, fall back to threshold = 0.5
+            best_threshold = 0.5
+            print(f"Fold {fold+1}: No threshold achieved sensitivity >= {target_sensitivity:.2f}, using 0.5.")
+
+        # Apply best threshold to get predictions
+        y_pred = (y_prob >= best_threshold).astype(int)
+
+        # --- Metrics at best_threshold ---
+        auc = roc_auc_score(y[test_idx], y_prob)
+        f1 = f1_score(y[test_idx], y_pred)
+        acc = accuracy_score(y[test_idx], y_pred)
+        prec = precision_score(y[test_idx], y_pred, zero_division=0)
+
+        tn, fp, fn, tp = confusion_matrix(y[test_idx], y_pred).ravel()
+        sens = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        spec = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+
+        metrics = {
+            "fold": fold + 1,
+            "n_train": len(train_idx),
+            "n_test": len(test_idx),
+            "threshold": float(best_threshold),
+            "auc": auc,
+            "f1": f1,
+            "accuracy": acc,
+            "precision": prec,
+            "sensitivity": sens,
+            "specificity": spec,
+            "tp": int(tp),
+            "tn": int(tn),
+            "fp": int(fp),
+            "fn": int(fn),
+        }
+        fold_metrics.append(metrics)
+
+        print(
+            f"  Thr: {best_threshold:.3f}, "
+            f"AUC: {auc:.3f}, F1: {f1:.3f}, Acc: {acc:.3f}, "
+            f"Sens: {sens:.3f}, Spec: {spec:.3f}, Prec: {prec:.3f}"
+        )
+
+    # Fold-level dataframe
+    df = pd.DataFrame(fold_metrics)
+
+    summary = {
+        "auc_mean": df["auc"].mean(),
+        "auc_std": df["auc"].std(),
+        "f1_mean": df["f1"].mean(),
+        "f1_std": df["f1"].std(),
+        "accuracy_mean": df["accuracy"].mean(),
+        "accuracy_std": df["accuracy"].std(),
+        "precision_mean": df["precision"].mean(),
+        "precision_std": df["precision"].std(),
+        "sensitivity_mean": df["sensitivity"].mean(),
+        "sensitivity_std": df["sensitivity"].std(),
+        "specificity_mean": df["specificity"].mean(),
+        "specificity_std": df["specificity"].std(),
+        "threshold_mean": df["threshold"].mean(),
+        "threshold_std": df["threshold"].std(),
+    }
+
+    print("\nFINAL CV RESULTS (5ch Bandpower + RF, threshold-optimized):")
+    for k, v in summary.items():
+        print(f"{k}: {v:.3f}")
+
+    if save_logs:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        metrics_path = Path(output_dir) / f"cv_metrics_5ch_thresh_opt_{timestamp}.csv"
+        df.to_csv(metrics_path, index=False)
+        print(f"Saved per-fold metrics to {metrics_path}")
+
+        config = {
+            "representation": "bandpower",
+            "model": "RandomForest",
+            "channels": channels,
+            "target_sensitivity": target_sensitivity,
+            **rf_params,
+            "n_splits": n_splits
+        }
+        metrics_summary = {**summary}
+        log_experiment(config, metrics_summary, output_dir)
+
+    return {
+        "fold_metrics": df,
+        **summary
+    }
 
 def cross_val_stft_2dcnn(
     results_root: str,
@@ -256,7 +416,7 @@ def cross_val_stft_2dcnn(
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
     # STEP 1: SMART SAMPLING (32 windows/subject = 2K total)
-    print("🧠 Smart sampling: 32 windows per subject...")
+    print("Smart sampling: 32 windows per subject...")
     from src.ml.datasets import STFTDataset
     dataset = STFTDataset(results_root, subjects=subjects, diagnosis_filter=['AD', 'HC'], channels=channels)
     
@@ -280,7 +440,7 @@ def cross_val_stft_2dcnn(
     y_all = torch.tensor(all_y)
     subject_ids = np.array(all_subject_ids)
     
-    print(f"✅ Loaded: X={X_all.shape}, y={y_all.shape}, {len(np.unique(subject_ids))} subjects")
+    print(f"Loaded: X={X_all.shape}, y={y_all.shape}, {len(np.unique(subject_ids))} subjects")
     
     # STEP 2: GroupKFold splits
     from sklearn.model_selection import GroupKFold
@@ -288,7 +448,7 @@ def cross_val_stft_2dcnn(
     auc_scores, f1_scores = [], []
     
     for fold, (train_idx, test_idx) in enumerate(gkf.split(X_all, y_all, groups=subject_ids)):
-        print(f"\n📂 Fold {fold+1}/{n_splits}: {len(train_idx)} train, {len(test_idx)} test windows")
+        print(f"\nFold {fold+1}/{n_splits}: {len(train_idx)} train, {len(test_idx)} test windows")
         
         X_train = X_all[train_idx]
         y_train = y_all[train_idx]
@@ -344,7 +504,7 @@ def cross_val_stft_2dcnn(
     
     # STEP 5: Aggregate + log
     auc_mean, auc_std = np.mean(auc_scores), np.std(auc_scores)
-    print(f"\n📊 FINAL CV RESULTS (STFT + 2D CNN):")
+    print(f"\nFINAL CV RESULTS (STFT + 2D CNN):")
     print(f"AUC: {auc_mean:.3f} ± {auc_std:.3f}")
     
     if len(auc_scores) > 1:
@@ -388,7 +548,7 @@ def cross_val_connectivity(
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
     # STEP 1: Smart sampling (32 windows/subject)
-    print("🧠 Smart sampling connectivity: 32 windows/subject...")
+    print("Smart sampling connectivity: 32 windows/subject...")
     from src.ml.datasets import ConnectivityDataset
     dataset = ConnectivityDataset(results_root, subjects=subjects, diagnosis_filter=['AD', 'HC'])
     
@@ -411,7 +571,7 @@ def cross_val_connectivity(
     y_all = torch.tensor(all_y)
     subject_ids = np.array(all_subject_ids)
     
-    print(f"✅ Loaded: X={X_all.shape}, y={y_all.shape}, {len(np.unique(subject_ids))} subjects")
+    print(f"Loaded: X={X_all.shape}, y={y_all.shape}, {len(np.unique(subject_ids))} subjects")
     
     # STEP 2: GroupKFold splits (same as bandpower/RF!)
     from sklearn.model_selection import GroupKFold
@@ -439,7 +599,7 @@ def cross_val_connectivity(
         rf_auc_scores.append(roc_auc_score(y_test_rf, y_prob))
     
     rf_auc_mean = np.mean(rf_auc_scores)
-    print(f"🏆 Connectivity + RF: {rf_auc_mean:.3f} ± {np.std(rf_auc_scores):.3f}")
+    print(f"Connectivity + RF: {rf_auc_mean:.3f} ± {np.std(rf_auc_scores):.3f}")
     
     # MLP BENCHMARK
     print("\n=== CONNECTIVITYMLP ===")
@@ -504,7 +664,7 @@ def cross_val_connectivity(
         print(f"  AUC: {metrics['auc']:.3f}, F1: {metrics['f1']:.3f}")
     
     # FINAL RESULTS
-    print(f"\n📊 CONNECTIVITY COMPARISON:")
+    print(f"\nCONNECTIVITY COMPARISON:")
     print(f"RF:           {rf_auc_mean:.3f} ± {np.std(rf_auc_scores):.3f}")
     print(f"ConnectivityMLP: {np.mean(mlp_auc_scores):.3f} ± {np.std(mlp_auc_scores):.3f}")
     
@@ -528,9 +688,20 @@ def cross_val_connectivity(
     }
  
 if __name__ == "__main__":
-    conn_root = "results/connectivity_20260202_2157"
-    subjects = list(range(1, 66))
+    results_root  = "results/bandpower_20260202_2134"
+    subjects = list(range(65))
+
+    rf_params = {
+        "n_estimators": 200,
+        "max_depth": None,
+        "min_samples_split": 2
+    }
     
-    print("=== CONNECTIVITY BENCHMARK ===")
-    results = cross_val_connectivity(conn_root, subjects)
-    print(f"RF:  {results['rf_auc']:.3f}, MLP: {results['mlp_auc']:.3f}")
+    metrics_out = cross_val_bandpower_rf_thresh_opt(
+        results_root=results_root,
+        subjects=subjects,
+        rf_params=rf_params,
+        channels=[12, 14, 9, 16, 10],    # explicit, for clarity
+        n_splits=5,
+        save_logs=True
+    )
