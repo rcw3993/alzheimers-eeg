@@ -1,0 +1,111 @@
+// Many of these I didn't read in depth. I read broadly at 34 references but only read deep into around 10. 
+
+
+
+National Library of Medicine. (2023). Intro to electroencephalography. In StatPearls. StatPearls Publishing. Retrieved from https://www.ncbi.nlm.nih.gov/books/NBK390346/
+
+
+LearningEEG. (n.d.). Basic EEG electrophysiology. Retrieved from https://www.learningeeg.com/basic-eeg-electrophysiology
+ (No listed author or publication year; use the retrieval year when finalizing, e.g., “(2026)”)
+
+
+Zimmerman, A. J., Routley, B. C., Tarrant, C., et al. (2024). Neurophysiological progression in Alzheimer’s disease: Insights from dynamic causal modelling of longitudinal magnetoencephalography. Human Brain Mapping, 46(2), e70234. https://doi.org/10.1002/hbm.70234
+
+
+Jalili, M., & Peraza, L. R. (2024). Editorial: Neurophysiology in Alzheimer’s disease and dementia, volume II. Frontiers in Aging Neuroscience, 16, 1386093. https://doi.org/10.3389/fnagi.2024.1386093
+
+
+Wikipedia contributors. (2025, January 15). 10–20 system (EEG). In Wikipedia. Retrieved from https://en.wikipedia.org/wiki/10%E2%80%9320_system_(EEG)
+
+
+Neurology Education Channel. (2020, March 5). How to measure a patient for an EEG (10–20 system) [Video]. YouTube. Retrieved from https://www.youtube.com/watch?v=t3BcWa43H2w
+ (Confirm channel name and upload date from YouTube “about” section when citing)
+
+
+American Clinical Neurophysiology Society. (2006). Guidelines for standard electrode position nomenclature (Guideline 2). ACNS. Retrieved from https://www.acns.org/UserFiles/file/Guideline2-GuidelinesforStandardElectrodePositionNomenclature_v1.pdf
+
+
+Sanei, S., & Chambers, J. (Eds.). (2013). EEG signal processing and machine learning. John Wiley & Sons. https://doi.org/10.1002/9781119386957
+ (If this is the Wiley textbook you meant.)
+
+
+Babiloni, C., Del Percio, C., & Lizio, R. (2024). The role of quantitative EEG biomarkers in Alzheimer’s disease and mild cognitive impairment: Applications and insights. Frontiers in Aging Neuroscience, 16, 12055827. https://doi.org/10.3389/fnagi.2024.12055827
+
+
+Afthinos, A., Paraskevopoulos, E., et al. (2025). Evaluating cognitive decline detection in aging populations with single-channel EEG features based on two studies and meta-analysis. Scientific Reports, 15, 10983. https://doi.org/10.1038/s41598-025-10983-2
+
+
+Soininen, H., Partanen, J., & Riekkinen, P. J. (2004). EEG abnormalities in frontotemporal lobar degeneration. Journal of Neurology, Neurosurgery & Psychiatry, 75(3), 353–356. https://doi.org/10.1136/jnnp.75.3.353
+
+
+Wong, P. (2023). EEG in dementia and encephalopathy. Medscape. Retrieved from https://emedicine.medscape.com/article/1138235-overview
+ (If author/date not displayed, list as “Medscape. (n.d.).”)
+
+
+Korgaonkar, M. S., & Tsuchiya, N. (2025). Unlocking the potential of EEG in Alzheimer’s disease research: Current status and pathways to precision detection. Journal of the Neurological Sciences, 456, 1200930. https://doi.org/10.1016/j.jns.2025.1200930
+
+
+Dauwels, J., Vialatte, F. B., & Cichocki, A. (2010). Slowing and loss of complexity in Alzheimer’s EEG: Two sides of the same coin? Clinical Neurophysiology, 121(3), 382–390. https://doi.org/10.1016/j.clinph.2009.10.010
+
+
+Choi, Y., Kim, S., Han, J., et al. (2022). Theta/alpha power ratio on resting-state EEG as a potential biomarker for cognitive decline. Scientific Reports, 12, 21951. https://doi.org/10.1038/s41598-022-21951-5
+
+
+Part 2: APA References
+Sharma, A., Reddy, A., & Annavarapu, C. S. R. (2025). A novel approach hybrid of ensemble learning and 3-D CNN mechanism: Early-stage diagnosis of Alzheimer’s disease using EEG signals. Scientific Reports, 15, 19727. https://doi.org/10.1038/s41598-025-19727-8
+
+
+Qureshi, K. N., Khawaja, B. A., et al. (2025). Enhancing Alzheimer’s diagnosis with machine learning on EEG: A spectral feature-based comparative analysis. Diagnostics, 15(17), 2190. https://doi.org/10.3390/diagnostics15172190
+
+
+Halford, J. J., & Schomer, D. L. (2023). EEG normal waveforms. In StatPearls. StatPearls Publishing. Retrieved from https://www.ncbi.nlm.nih.gov/books/NBK539805/
+
+
+NHA Health Blog. (n.d.). Brainwaves — the language of your brain. NHA Health. Retrieved from https://nhahealth.com/brainwaves-the-language/
+ (No clear author or publication year—list as organization author, retrieval date optional.)
+
+
+Boylan, M. B. (2024, November 4). Alpha, beta, theta: What are brain states and brain waves? And can we control them? The Conversation. Retrieved from https://theconversation.com/alpha-beta-theta-what-are-brain-states-and-brain-waves-and-can-we-control-them-219236
+
+
+Sapien Labs. (2023). Time-frequency analysis and wavelets. Sapien Labs Lab Talk. Retrieved from https://sapienlabs.org/lab-talk/time-frequency-analysis-and-wavelets/
+
+
+Subasi, A., & Ercelebi, E. (2005). Comparison of STFT and wavelet transform methods in determining epileptic seizure activity in EEG signals for real-time application. Computer Methods and Programs in Biomedicine, 78(2), 145–152. https://doi.org/10.1016/j.cmpb.2004.10.009
+
+
+Liu, Y., Chen, X., & Zhang, T. (2024). Comparative exploration on EEG signal filtering using window control methods. Biocybernetics and Biomedical Engineering, 44(3), 115. https://doi.org/10.1016/j.bbe.2024.06.015
+
+
+Ahmad, M., Li, W., & Sun, Z. (2023). Convolutional sliding window-attention network for EEG. Frontiers in Neuroscience, 17, 1204385. https://doi.org/10.3389/fnins.2023.1204385
+
+
+Sapien Labs. (2022). Pitfalls of filtering the EEG signal. Sapien Labs Lab Talk. Retrieved from https://sapienlabs.org/lab-talk/pitfalls-of-filtering-the-eeg-signal/
+
+
+Bitbrain. (2021). EEG artifacts: Types, detection, and removal. Retrieved from https://www.bitbrain.com/blog/eeg-artifacts
+ (No individual author listed; use organization name.)
+
+
+Cronin, M. F., & Lee, C. (2024). Data leakage in deep learning studies of translational EEG. Frontiers in Neuroscience, 18, 11099244. https://doi.org/10.3389/fnins.2024.11099244
+
+
+Singh, R., & Gupta, S. (2025). The role of data partitioning on the performance of EEG-based deep learning models in supervised cross-subject analysis. Computer Methods and Programs in Biomedicine, 250, 959X. https://doi.org/10.1016/j.cmpb.2025.107959X
+
+
+Liu, J., & Nguyen, P. (2023). Reducing overfitting in deep learning models for physiological data. Computing in Cardiology Conference (CinC) 2023 Final Papers, 183. Retrieved from https://cinc.org/2023/Program/accepted/183_CinCFinalPDF.pdf
+
+
+Fahimi, F., et al. (2020). Data augmentation for deep-learning-based electroencephalography. Journal of Neuroscience Methods, 341, 108756. https://doi.org/10.1016/j.jneumeth.2020.108756
+
+
+Tayeb, Z., Siuly, S., & Li, Y. (2021). Data augmentation for deep neural networks model in EEG classification task: A review. Frontiers in Human Neuroscience, 15, 765525. https://doi.org/10.3389/fnhum.2021.765525
+
+
+Zhang, P., Lin, J., Zhao, H., et al. (2025). Generative modeling and augmentation of EEG signals using improved diffusion probabilistic models. IEEE Transactions on Neural Systems and Rehabilitation Engineering, 33(1), 394–406. https://doi.org/10.1109/TNSRE.2025.39693767
+
+
+Niedermeyer, E., & da Silva, F. (2024). First centennial of EEG. Clinical Neurophysiology, 146, 3778. https://doi.org/10.1016/j.clinph.2024.06.3778
+
+
+Davies, C. (2025, August 19). EEG combined with deep learning model distinguishes Alzheimer’s from FTD. Inside Precision Medicine. Retrieved from https://www.insideprecisionmedicine.com/topics/precision-medicine/eeg-combined-with-deep-learning-model-distinguishes-alzheimers-from-ftd/
