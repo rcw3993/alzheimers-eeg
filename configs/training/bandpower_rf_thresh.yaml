@@ -1,0 +1,31 @@
+# Training config: bandpower + RF with screening threshold optimization
+# Usage: python scripts/train.py configs/training/bandpower_rf_thresh.yaml
+
+mode: bandpower_rf_thresh
+version: v1
+
+features_dir: outputs/features/bandpower_v1
+
+subjects: [
+   1,  2,  3,  4,  5,  6,  7,  8,  9, 10,
+  11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+  21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+  31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+  41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+  51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+  61, 62, 63, 64, 65
+]
+
+# Top-5 electrodes from sweep
+channels: [12, 14, 9, 16, 10]
+
+rf_params:
+  n_estimators: 200
+  max_depth: null
+  min_samples_split: 2
+
+n_splits: 5
+
+# Threshold optimization: find threshold achieving this sensitivity minimum,
+# then maximize Youden's J among valid thresholds
+target_sensitivity: 0.85
