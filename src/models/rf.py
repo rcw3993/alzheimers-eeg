@@ -28,10 +28,17 @@ class RandomForestWrapper:
     def fit(self, X: np.ndarray, y: np.ndarray):
         self.model.fit(X, y)
         self.is_fitted = True
-        n_bands = X.shape[1] // 19 if X.shape[1] % 19 == 0 else 1
-        self.channel_importances = (
-            self.model.feature_importances_.reshape(19, n_bands).mean(axis=1)
-        )
+        # Infer shape: features = n_channels * n_bands
+        # We try n_bands=5 first (standard bandpower), then fall back to flat
+        n_features = X.shape[1]
+        if n_features % 5 == 0:
+            n_ch = n_features // 5
+            self.channel_importances = (
+                self.model.feature_importances_.reshape(n_ch, 5).mean(axis=1)
+            )
+        else:
+            # Non-bandpower features: store flat importances
+            self.channel_importances = self.model.feature_importances_
         return self
 
     def predict(self, X): return self.model.predict(X)

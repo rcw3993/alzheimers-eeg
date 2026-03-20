@@ -117,7 +117,7 @@ python scripts/train.py configs/training/bandpower_rf_thresh.yaml --save-model
 ## Project structure
 
 ```
-eeg-alzheimers/
+alzheimers-eeg/
 │
 ├── data/                          # gitignored — download separately
 │   └── ds004504/
