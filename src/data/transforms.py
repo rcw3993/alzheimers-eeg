@@ -25,6 +25,130 @@ def preprocess_raw(subject_data: dict, config: dict):
     return raw
 
 
+def apply_ica(raw, config: dict, subject_id) -> tuple:
+    """
+    Fit ICA on the filtered recording and remove artifact components
+    identified by ICLabel.
+
+    Must be called AFTER preprocess_raw() and BEFORE extract_raw_windows().
+    ICA needs the full continuous recording to estimate components reliably —
+    do not apply per-window.
+
+    config keys used:
+        ica:                        bool — whether to apply ICA at all
+        ica_exclude:                list of component types to remove,
+                                    e.g. ["eye", "muscle"]
+                                    ICLabel labels: "brain", "eye", "muscle",
+                                    "heart", "line_noise", "channel_noise", "other"
+        ica_confidence_threshold:   float (0-1) — only remove a component if
+                                    ICLabel confidence exceeds this value
+                                    (default: 0.8)
+        ica_n_components:           int or None — number of ICA components
+                                    (default: None = use rank of data, typically 19)
+
+    Returns:
+        raw_clean:      MNE Raw object with artifact components removed
+        ica_info:       dict with n_components_removed and which components
+    """
+    import mne
+    try:
+        from mne_icalabel import label_components
+    except ImportError:
+        raise ImportError(
+            "mne-icalabel is required for ICA. Install with: pip install mne-icalabel"
+        )
+
+    exclude_types      = config.get("ica_exclude", ["eye", "muscle"])
+    confidence_thresh  = float(config.get("ica_confidence_threshold", 0.8))
+    n_components       = config.get("ica_n_components", None)
+
+    print(f"  ICA: fitting on subject {subject_id} "
+          f"(exclude={exclude_types}, confidence>={confidence_thresh})...")
+
+    # --- Prepare a broadband copy that meets all ICLabel requirements ---
+    # ICLabel needs:
+    #   - 1-100 Hz bandpass (not 1-40 Hz)
+    #   - CAR baked into the data array (not stored as projection)
+    #   - Extended infomax decomposition
+    #
+    # We can't recover 40-100 Hz from the already-filtered `raw`, so we
+    # reload from the original file and apply a fresh broadband filter.
+    # ICA component labels are then applied to the original `raw`.
+    eeg_path = raw.filenames[0] if hasattr(raw, "filenames") and raw.filenames else None
+
+    if eeg_path is not None:
+        raw_for_ica = mne.io.read_raw_eeglab(str(eeg_path), preload=True, verbose=False)
+        raw_for_ica.filter(l_freq=1, h_freq=100, verbose=False)
+        # Use projection=False to bake CAR directly into data array.
+        # ICLabel checks raw.info['custom_ref_applied'] which only gets set
+        # when the reference is applied directly, not via SSP projection.
+        raw_for_ica.set_eeg_reference('average', projection=False, verbose=False)
+    else:
+        # Fallback: no source file available (e.g. passed in programmatically)
+        # Use the already-filtered raw — warnings will appear but ICA still runs
+        print(f"    WARNING: Cannot reload raw from file for broadband ICA fit. "
+              f"ICLabel accuracy may be reduced.")
+        raw_for_ica = raw.copy()
+        raw_for_ica.apply_proj()
+
+    # --- Fit ICA using extended infomax (what ICLabel was trained on) ---
+    ica = mne.preprocessing.ICA(
+        n_components=n_components,
+        method="infomax",
+        fit_params=dict(extended=True),
+        random_state=42,
+        max_iter="auto",
+    )
+    ica.fit(raw_for_ica, verbose=False)
+
+    # ICLabel: classify components using the broadband copy
+    component_labels = label_components(raw_for_ica, ica, method="iclabel")
+    labels      = component_labels["labels"]       # list of str, one per component
+    probs       = component_labels["y_pred_proba"] # array (n_components, n_classes)
+
+    # Print full ICLabel breakdown so we can see what it found
+    # Note: mne-icalabel returns keys 'labels' and 'y_pred_proba' only.
+    # The predicted label confidence is probs[i].max() since the label
+    # IS the argmax class.
+    label_counts = {}
+    for label in labels:
+        label_counts[label] = label_counts.get(label, 0) + 1
+    top_conf = [(labels[i], float(probs[i].max())) for i in range(len(labels))]
+    top_conf.sort(key=lambda x: -x[1])
+    print(f"    ICLabel summary: {label_counts}")
+    print(f"    Top-5 by confidence: {top_conf[:5]}")
+    print(f"    Available keys: {list(component_labels.keys())}")
+
+    # Find components to exclude: type matches AND confidence exceeds threshold
+    # The confidence for a component is simply the max probability value,
+    # since labels[i] = argmax(probs[i]).
+    exclude_idx = []
+    for idx, label in enumerate(labels):
+        if label in exclude_types:
+            confidence = float(probs[idx].max())
+            if confidence >= confidence_thresh:
+                exclude_idx.append(idx)
+                print(f"    Excluding component {idx}: {label} "
+                      f"(confidence={confidence:.2f})")
+
+    if not exclude_idx:
+        print(f"    No components exceeded confidence threshold — signal unchanged")
+
+    ica.exclude = exclude_idx
+    # Apply removal to the original 1-40 Hz filtered data (not the broadband copy)
+    raw_clean = ica.apply(raw.copy(), verbose=False)
+
+    ica_info = {
+        "n_components_total":   ica.n_components_,
+        "n_components_removed": len(exclude_idx),
+        "excluded_indices":     exclude_idx,
+        "excluded_labels":      [labels[i] for i in exclude_idx],
+    }
+
+    print(f"  ICA: removed {len(exclude_idx)}/{ica.n_components_} components")
+    return raw_clean, ica_info
+
+
 def extract_raw_windows(raw, config: dict, subject_id: int) -> dict:
     """
     Slide a window across the recording and return a dict of tensors.

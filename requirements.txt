@@ -5,6 +5,7 @@ pandas>=2.0
 
 # EEG
 mne>=1.5
+mne-icalabel>=0.4
 
 # ML
 scikit-learn>=1.3

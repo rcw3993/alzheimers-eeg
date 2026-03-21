@@ -18,7 +18,7 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.data.loaders import load_raw_eeg, get_diagnosis
-from src.data.transforms import preprocess_raw, extract_raw_windows
+from src.data.transforms import preprocess_raw, apply_ica, extract_raw_windows
 from src.features.bandpower import compute_bandpower
 from src.features.stft import compute_stft
 from src.features.connectivity import compute_plv
@@ -68,14 +68,23 @@ def main():
             continue
 
         raw_filtered = preprocess_raw(subject_data, config)
+
+        # Optional ICA artifact removal (fits on full recording before windowing)
+        if config.get("ica", False):
+            raw_filtered, ica_info = apply_ica(raw_filtered, config, subject_id)
+
         windows_data = extract_raw_windows(raw_filtered, config, subject_id)
         sfreq = windows_data["sfreq"]
 
         # All feature functions accept (windows_data, sfreq, **extra_kwargs)
-        extra = {k: config[k] for k in config if k not in
-                 ("representation", "version", "subjects", "filters",
-                  "window_size", "step_size", "artifact_rejection",
-                  "ptp_threshold", "diagnosis_filter", "name")}
+        # Strip pipeline/preprocessing keys — only pass representation-specific params
+        _pipeline_keys = {
+            "representation", "version", "subjects", "filters",
+            "window_size", "step_size", "artifact_rejection", "ptp_threshold",
+            "diagnosis_filter", "name",
+            "ica", "ica_exclude", "ica_confidence_threshold", "ica_n_components",
+        }
+        extra = {k: config[k] for k in config if k not in _pipeline_keys}
 
         result = compute_fn(windows_data, sfreq=sfreq, **extra)
 
