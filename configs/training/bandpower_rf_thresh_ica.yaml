@@ -1,10 +1,7 @@
-# Training config: bandpower features + Random Forest (standard CV)
-# Usage: python scripts/train.py configs/training/bandpower_rf.yaml
+mode: bandpower_rf_thresh
+version: ica_v1
 
-mode: bandpower_rf
-version: v1
-
-features_dir: outputs/features/bandpower_v1
+features_dir: outputs/features/bandpower_ica_v1   # <-- changed
 
 subjects: [
    1,  2,  3,  4,  5,  6,  7,  8,  9, 10,
@@ -16,8 +13,6 @@ subjects: [
   61, 62, 63, 64, 65
 ]
 
-# Channel subset — null means all 19
-# Top-5 from electrode sweep: T4(12), Pz(14), Cz(9), T6(16), C3(10)
 channels: [12, 14, 9, 16, 10]
 
 rf_params:
@@ -26,3 +21,4 @@ rf_params:
   min_samples_split: 2
 
 n_splits: 5
+target_sensitivity: 0.85

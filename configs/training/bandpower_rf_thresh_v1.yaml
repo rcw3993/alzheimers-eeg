@@ -1,0 +1,29 @@
+# Evaluation config: bandpower RF (no ICA, 5 electrodes)
+# Usage: python scripts/evaluate.py configs/evaluation/bandpower_rf_thresh_v1.yaml
+
+name: bandpower_rf_thresh_v1
+description: Baseline bandpower RF, threshold-optimized, 5 electrodes, no ICA
+
+model_path:   outputs/models/bandpower_rf_thresh_v1/model.joblib
+features_dir: outputs/features/bandpower_v1
+fold_csv:     outputs/results/bandpower_rf_thresh_v1/fold_metrics.csv
+output_dir:   outputs/results/bandpower_rf_thresh_v1
+figures_dir:  outputs/results/bandpower_rf_thresh_v1/figures
+sweep_csv:    outputs/results/bandpower_rf_thresh_v1/electrode_sweep.csv
+
+channels: [12, 14, 9, 16, 10]
+subjects: [
+   1,  2,  3,  4,  5,  6,  7,  8,  9, 10,
+  11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+  21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+  31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+  41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+  51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+  61, 62, 63, 64, 65
+]
+rf_params:
+  n_estimators: 200
+  max_depth: null
+  min_samples_split: 2
+n_splits: 5
+threshold: 0.362
